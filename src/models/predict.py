@@ -49,6 +49,7 @@ class PredictiveMaintenanceInferenceEngine:
             c for c in df.columns if c not in exclude and pd.api.types.is_numeric_dtype(df[c])
         ]
 
+        df["RUL_clipped"] = np.clip(df["RUL"], a_min=0, a_max=125)
         preprocessor = DataPreprocessor()
         df_scaled = preprocessor.fit_transform(df, feature_names)
 
