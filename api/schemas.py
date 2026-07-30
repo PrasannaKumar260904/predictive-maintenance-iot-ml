@@ -20,8 +20,12 @@ class TelemetryInput(BaseModel):
     rpm: float = Field(default=2850.0, description="Rotational speed in RPM")
     torque: float = Field(default=142.5, description="Torque in Nm")
     operating_hours: int = Field(default=2400, description="Cumulative machine operating hours")
-    error_code: int = Field(default=0, description="Recent diagnostic error code (0: None, 1: Warning, 2+: Fault)")
-    days_since_maintenance: int = Field(default=45, description="Days elapsed since last maintenance service")
+    error_code: int = Field(
+        default=0, description="Recent diagnostic error code (0: None, 1: Warning, 2+: Fault)"
+    )
+    days_since_maintenance: int = Field(
+        default=45, description="Days elapsed since last maintenance service"
+    )
 
 
 class BatchTelemetryInput(BaseModel):

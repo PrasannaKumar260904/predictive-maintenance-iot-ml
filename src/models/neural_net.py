@@ -14,7 +14,9 @@ from torch.utils.data import DataLoader, TensorDataset
 class PyTorchMLP(nn.Module):
     """Multi-Layer Perceptron for RUL Regression."""
 
-    def __init__(self, input_dim: int, hidden_units: list = [128, 64, 32], dropout_rate: float = 0.2):
+    def __init__(self, input_dim: int, hidden_units: list = None, dropout_rate: float = 0.2):
+        if hidden_units is None:
+            hidden_units = [128, 64, 32]
         super().__init__()
 
         layers = []
@@ -36,7 +38,9 @@ class PyTorchMLP(nn.Module):
 class PyTorchLSTM(nn.Module):
     """LSTM Recurrent Neural Network for sequential sensor telemetry."""
 
-    def __init__(self, input_dim: int, hidden_dim: int = 64, num_layers: int = 2, dropout: float = 0.2):
+    def __init__(
+        self, input_dim: int, hidden_dim: int = 64, num_layers: int = 2, dropout: float = 0.2
+    ):
         super().__init__()
 
         self.lstm = nn.LSTM(
@@ -69,12 +73,14 @@ class PyTorchNeuralNetRegressor:
         self,
         model_type: str = "mlp",
         input_dim: int = 20,
-        hidden_units: list = [128, 64, 32],
+        hidden_units: list = None,
         lr: float = 0.001,
         batch_size: int = 64,
         epochs: int = 25,
         device: str | None = None,
     ):
+        if hidden_units is None:
+            hidden_units = [128, 64, 32]
         self.model_type = model_type
         self.input_dim = input_dim
         self.hidden_units = hidden_units
@@ -97,10 +103,12 @@ class PyTorchNeuralNetRegressor:
 
         dataset = TensorDataset(X_tensor, y_tensor)
         drop_last = len(dataset) > self.batch_size
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, drop_last=drop_last)
+        dataloader = DataLoader(
+            dataset, batch_size=self.batch_size, shuffle=True, drop_last=drop_last
+        )
 
         self.model.train()
-        for epoch in range(self.epochs):
+        for _epoch in range(self.epochs):
             for batch_X, batch_y in dataloader:
                 batch_X, batch_y = batch_X.to(self.device), batch_y.to(self.device)
 

@@ -50,7 +50,9 @@ def startup_event():
         pipeline = DeploymentPipeline(model_name="best_model")
         logger.info("FastAPI Application & ML Pipeline initialized successfully.")
     except Exception as e:
-        logger.warning(f"Could not load pre-trained model on startup: {e}. Will attempt train/fallback.")
+        logger.warning(
+            f"Could not load pre-trained model on startup: {e}. Will attempt train/fallback."
+        )
 
 
 @app.get("/health", response_model=HealthResponse, tags=["Monitoring"])
@@ -90,7 +92,7 @@ def predict(input_data: BatchTelemetryInput) -> list[PredictionOutput]:
         results = pipeline.run_inference(df_input)
         response = []
 
-        for item, rec in zip(results, records_dict):
+        for item, rec in zip(results, records_dict, strict=False):
             response.append(
                 PredictionOutput(
                     engine_id=rec["engine_id"],
@@ -105,8 +107,8 @@ def predict(input_data: BatchTelemetryInput) -> list[PredictionOutput]:
 
         return response
     except Exception as e:
-        logger.error(f"Prediction Error: {e}")
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+        logger.exception("Prediction failed.")
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {e!s}") from e
 
 
 @app.post("/predict_rul", tags=["Inference"])
@@ -144,10 +146,11 @@ def explain_prediction(input_data: TelemetryInput) -> SHAPExplanationOutput:
             top_drivers=explanation["top_drivers"],
         )
     except Exception as e:
-        logger.error(f"Explainability Error: {e}")
-        raise HTTPException(status_code=500, detail=f"Explanation failed: {str(e)}")
+        logger.exception("Explanation failed.")
+        raise HTTPException(status_code=500, detail=f"Explanation failed: {e!s}") from e
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

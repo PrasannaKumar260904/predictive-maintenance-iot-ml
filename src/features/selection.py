@@ -8,13 +8,17 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def remove_low_variance_features(df: pd.DataFrame, feature_cols: list[str], threshold: float = 0.01) -> list[str]:
+def remove_low_variance_features(
+    df: pd.DataFrame, feature_cols: list[str], threshold: float = 0.01
+) -> list[str]:
     """Filters out numeric features with variance below threshold."""
     variances = df[feature_cols].var()
     selected = variances[variances >= threshold].index.tolist()
     dropped = set(feature_cols) - set(selected)
     if dropped:
-        logger.info(f"Dropped {len(dropped)} low-variance features (threshold={threshold}): {dropped}")
+        logger.info(
+            f"Dropped {len(dropped)} low-variance features (threshold={threshold}): {dropped}"
+        )
     return selected
 
 
@@ -53,8 +57,18 @@ def select_features(
         List[str]: Filtered list of feature column names.
     """
     if candidate_cols is None:
-        exclude = {"engine_id", "cycle", "RUL", "RUL_clipped", "failure_risk", "is_failure", "machine_type"}
-        candidate_cols = [c for c in df.columns if c not in exclude and pd.api.types.is_numeric_dtype(df[c])]
+        exclude = {
+            "engine_id",
+            "cycle",
+            "RUL",
+            "RUL_clipped",
+            "failure_risk",
+            "is_failure",
+            "machine_type",
+        }
+        candidate_cols = [
+            c for c in df.columns if c not in exclude and pd.api.types.is_numeric_dtype(df[c])
+        ]
 
     cols_var = remove_low_variance_features(df, candidate_cols, threshold=variance_threshold)
     cols_final = remove_high_correlation_features(df, cols_var, threshold=correlation_threshold)

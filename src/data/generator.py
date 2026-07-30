@@ -42,7 +42,12 @@ def generate_iot_sensor_data(
     np.random.seed(seed)
     records = []
 
-    machine_types = ["Turbofan_X100", "Centrifugal_Pump_V2", "Industrial_Compressor_C5", "Gas_Turbine_GT9"]
+    machine_types = [
+        "Turbofan_X100",
+        "Centrifugal_Pump_V2",
+        "Industrial_Compressor_C5",
+        "Gas_Turbine_GT9",
+    ]
 
     for engine_id in range(1, num_engines + 1):
         machine = np.random.choice(machine_types)
@@ -105,5 +110,7 @@ def generate_iot_sensor_data(
             )
 
     df = pd.DataFrame(records)
-    logger.info(f"Generated synthetic IoT sensor dataset: {df.shape[0]} rows across {num_engines} engines.")
+    logger.info(
+        f"Generated synthetic IoT sensor dataset: {df.shape[0]} rows across {num_engines} engines."
+    )
     return df

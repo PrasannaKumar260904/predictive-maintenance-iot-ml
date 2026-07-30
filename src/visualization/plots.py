@@ -1,7 +1,7 @@
 """Publication-grade visualization module producing Matplotlib, Seaborn, and Plotly charts."""
 
 from pathlib import Path
-from typing import Dict, List, Optional
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -14,15 +14,17 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 # Industrial Aesthetic Theme Styling
-plt.style.use("seaborn-v0_8-darkgrid" if "seaborn-v0_8-darkgrid" in plt.style.available else "default")
+plt.style.use(
+    "seaborn-v0_8-darkgrid" if "seaborn-v0_8-darkgrid" in plt.style.available else "default"
+)
 COLOR_PALETTE = ["#00F2FE", "#4FACFE", "#00C6FF", "#0072FF", "#FF416C", "#FF4B2B"]
 
 
 def plot_sensor_degradation_trends(
     df: pd.DataFrame,
-    engine_ids: List[int],
-    sensor_cols: List[str],
-    save_path: Optional[str] = None,
+    engine_ids: list[int],
+    sensor_cols: list[str],
+    save_path: str | None = None,
 ) -> go.Figure:
     """Creates interactive Plotly multi-sensor degradation timeline across operational cycles."""
     subset = df[df["engine_id"].isin(engine_ids)]
@@ -59,7 +61,7 @@ def plot_sensor_degradation_trends(
 
 
 def plot_correlation_heatmap(
-    df: pd.DataFrame, feature_cols: List[str], save_path: Optional[str] = None
+    df: pd.DataFrame, feature_cols: list[str], save_path: str | None = None
 ) -> plt.Figure:
     """Plots Seaborn correlation heatmap for selected IoT sensor features."""
     fig, ax = plt.subplots(figsize=(12, 10))
@@ -85,14 +87,23 @@ def plot_correlation_heatmap(
 
 
 def plot_rul_predictions(
-    y_true: np.ndarray, y_pred: np.ndarray, model_name: str = "LightGBM", save_path: Optional[str] = None
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    model_name: str = "LightGBM",
+    save_path: str | None = None,
 ) -> go.Figure:
     """Plotly interactive line chart of Actual RUL vs Predicted RUL."""
     indices = np.arange(len(y_true))
 
     fig = go.Figure()
     fig.add_trace(
-        go.Scatter(x=indices, y=y_true, mode="lines", name="Ground Truth RUL", line={"color": "#00C6FF", "width": 2})
+        go.Scatter(
+            x=indices,
+            y=y_true,
+            mode="lines",
+            name="Ground Truth RUL",
+            line={"color": "#00C6FF", "width": 2},
+        )
     )
     fig.add_trace(
         go.Scatter(
@@ -122,7 +133,9 @@ def plot_rul_predictions(
 
 
 def plot_model_comparison_bar(
-    metrics_dict: Dict[str, Dict[str, float]], metric_name: str = "RMSE", save_path: Optional[str] = None
+    metrics_dict: dict[str, dict[str, float]],
+    metric_name: str = "RMSE",
+    save_path: str | None = None,
 ) -> go.Figure:
     """Interactive bar chart comparing performance metrics across multiple models."""
     models = list(metrics_dict.keys())

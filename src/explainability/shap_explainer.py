@@ -27,7 +27,9 @@ class ModelExplainer:
                 self.explainer = shap.TreeExplainer(self.model)
             else:
                 # Use Kernel or Permutation Explainer with background sample
-                bg_sample = shap.sample(X_background, 50) if len(X_background) > 50 else X_background
+                bg_sample = (
+                    shap.sample(X_background, 50) if len(X_background) > 50 else X_background
+                )
                 self.explainer = shap.Explainer(self.model.predict, bg_sample)
             logger.info(f"Fitted SHAP {type(self.explainer).__name__} for model explainability.")
         except Exception as e:
@@ -77,18 +79,21 @@ class ModelExplainer:
 
         base_val = (
             float(self.explainer.expected_value)
-            if hasattr(self.explainer, "expected_value") and not isinstance(self.explainer.expected_value, np.ndarray)
+            if hasattr(self.explainer, "expected_value")
+            and not isinstance(self.explainer.expected_value, np.ndarray)
             else 0.0
         )
 
         contribs = []
-        for feat, val, shap_val in zip(self.feature_names, instance, shap_vals):
+        for feat, val, shap_val in zip(self.feature_names, instance, shap_vals, strict=False):
             contribs.append(
                 {
                     "feature": feat,
                     "value": float(val),
                     "shap_value": float(shap_val),
-                    "impact": "Increases RUL/Health" if shap_val > 0 else "Decreases RUL (Degradation)",
+                    "impact": (
+                        "Increases RUL/Health" if shap_val > 0 else "Decreases RUL (Degradation)"
+                    ),
                 }
             )
 

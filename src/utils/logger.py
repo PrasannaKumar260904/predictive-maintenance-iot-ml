@@ -5,7 +5,9 @@ import sys
 from pathlib import Path
 
 
-def get_logger(name: str = "predictive_maintenance", log_file: str | None = None, level: int = logging.INFO) -> logging.Logger:
+def get_logger(
+    name: str = "predictive_maintenance", log_file: str | None = None, level: int = logging.INFO
+) -> logging.Logger:
     """Configures and returns a structured logger instance.
 
     Args:

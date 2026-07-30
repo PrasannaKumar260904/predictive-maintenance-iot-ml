@@ -1,21 +1,12 @@
 """Master model training, hyperparameter optimization, and evaluation pipeline."""
 
+import json
 import sys
 from pathlib import Path
+from typing import Any
 
-# Add project root to sys.path for seamless imports
-root_dir = Path(__file__).resolve().parent.parent.parent
-if str(root_dir) not in sys.path:
-    sys.path.insert(0, str(root_dir))
-
-import json
-from typing import Any, Dict, List, Tuple
-
-import joblib
 import numpy as np
 import optuna
-import pandas as pd
-
 from sklearn.ensemble import (
     ExtraTreesRegressor,
     HistGradientBoostingRegressor,
@@ -27,18 +18,21 @@ from sklearn.svm import SVR
 # Optional GBDTs with fallback handling if libomp missing on macOS
 try:
     import xgboost as xgb
+
     HAS_XGBOOST = True
 except Exception:
     HAS_XGBOOST = False
 
 try:
     import lightgbm as lgb
+
     HAS_LIGHTGBM = True
 except Exception:
     HAS_LIGHTGBM = False
 
 try:
     from catboost import CatBoostRegressor
+
     HAS_CATBOOST = True
 except Exception:
     HAS_CATBOOST = False
@@ -54,39 +48,66 @@ from src.models.registry import ModelRegistry
 from src.utils.config import load_config
 from src.utils.logger import get_logger
 
+# Ensure project root is on sys.path for direct script execution
+root_dir = Path(__file__).resolve().parent.parent.parent
+if str(root_dir) not in sys.path:
+    sys.path.insert(0, str(root_dir))
+
 # Disable Optuna verbose logging
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 logger = get_logger(__name__)
 
 
-def get_base_models(random_state: int = 42) -> Dict[str, Any]:
+def get_base_models(random_state: int = 42) -> dict[str, Any]:
     """Returns dictionary of available baseline regression estimators."""
     models = {
         "LinearRegression": LinearRegression(),
         "Ridge": Ridge(alpha=1.0, random_state=random_state),
-        "RandomForest": RandomForestRegressor(n_estimators=30, max_depth=8, random_state=random_state, n_jobs=1),
-        "ExtraTrees": ExtraTreesRegressor(n_estimators=30, max_depth=8, random_state=random_state, n_jobs=1),
-        "HistGradientBoosting": HistGradientBoostingRegressor(max_iter=30, learning_rate=0.1, random_state=random_state),
+        "RandomForest": RandomForestRegressor(
+            n_estimators=30, max_depth=8, random_state=random_state, n_jobs=1
+        ),
+        "ExtraTrees": ExtraTreesRegressor(
+            n_estimators=30, max_depth=8, random_state=random_state, n_jobs=1
+        ),
+        "HistGradientBoosting": HistGradientBoostingRegressor(
+            max_iter=30, learning_rate=0.1, random_state=random_state
+        ),
         "SVR": SVR(C=2.0, epsilon=0.1, max_iter=500),
     }
 
     if HAS_XGBOOST:
-        models["XGBoost"] = xgb.XGBRegressor(n_estimators=30, learning_rate=0.05, max_depth=5, random_state=random_state, n_jobs=1)
+        models["XGBoost"] = xgb.XGBRegressor(
+            n_estimators=30, learning_rate=0.05, max_depth=5, random_state=random_state, n_jobs=1
+        )
 
     if HAS_LIGHTGBM:
-        models["LightGBM"] = lgb.LGBMRegressor(n_estimators=30, learning_rate=0.05, max_depth=5, random_state=random_state, verbose=-1, n_jobs=1)
+        models["LightGBM"] = lgb.LGBMRegressor(
+            n_estimators=30,
+            learning_rate=0.05,
+            max_depth=5,
+            random_state=random_state,
+            verbose=-1,
+            n_jobs=1,
+        )
 
     if HAS_CATBOOST:
-        models["CatBoost"] = CatBoostRegressor(iterations=40, learning_rate=0.05, depth=5, random_seed=random_state, verbose=0)
+        models["CatBoost"] = CatBoostRegressor(
+            iterations=40, learning_rate=0.05, depth=5, random_seed=random_state, verbose=0
+        )
 
     return models
 
 
 def optimize_rf_optuna(
-    X_train: np.ndarray, y_train: np.ndarray, X_val: np.ndarray, y_val: np.ndarray, n_trials: int = 3
-) -> Dict[str, Any]:
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_val: np.ndarray,
+    y_val: np.ndarray,
+    n_trials: int = 3,
+) -> dict[str, Any]:
     """Hyperparameter optimization using Optuna on Ridge / RandomForest."""
+
     def objective(trial):
         alpha = trial.suggest_float("alpha", 0.1, 10.0, log=True)
         model = Ridge(alpha=alpha, random_state=42)
@@ -101,7 +122,7 @@ def optimize_rf_optuna(
     return study.best_params
 
 
-def train_and_evaluate_all_models(config_path: str = None) -> Dict[str, Any]:
+def train_and_evaluate_all_models(config_path: str = None) -> dict[str, Any]:
     """Main training orchestrator for end-to-end ML model pipeline."""
     config = load_config(config_path)
     logger.info("Initializing Master Model Training Pipeline...")
@@ -128,7 +149,11 @@ def train_and_evaluate_all_models(config_path: str = None) -> Dict[str, Any]:
     # Test set evaluation: pick last cycle per engine for standard CMAPSS evaluation
     test_last_cycles = test_scaled.groupby("engine_id").last().reset_index()
     X_test = test_last_cycles[selected_cols].values
-    y_test = test_rul_truth.values if len(test_rul_truth) == len(test_last_cycles) else test_last_cycles["RUL_clipped"].values
+    y_test = (
+        test_rul_truth.values
+        if len(test_rul_truth) == len(test_last_cycles)
+        else test_last_cycles["RUL_clipped"].values
+    )
 
     # 5. Train Base Models
     models_dict = get_base_models()
@@ -161,7 +186,9 @@ def train_and_evaluate_all_models(config_path: str = None) -> Dict[str, Any]:
     # 6. Optuna Hyperparameter Optimization on Ridge
     try:
         logger.info("Running Optuna Bayesian Hyperparameter Optimization...")
-        best_ridge_params = optimize_rf_optuna(X_train, y_train, X_test, y_test, n_trials=config["models"].get("optuna_trials", 3))
+        best_ridge_params = optimize_rf_optuna(
+            X_train, y_train, X_test, y_test, n_trials=config["models"].get("optuna_trials", 3)
+        )
         tuned_ridge = Ridge(**best_ridge_params)
         tuned_ridge.fit(X_train, y_train)
         tuned_preds = tuned_ridge.predict(X_test)
@@ -176,7 +203,9 @@ def train_and_evaluate_all_models(config_path: str = None) -> Dict[str, Any]:
     best_model = fitted_models[best_model_name]
     best_metrics = results[best_model_name]
 
-    logger.info(f"🏆 BEST MODEL CHAMPION: '{best_model_name}' with RMSE={best_metrics['RMSE']:.4f}, R2={best_metrics['R2']:.4f}")
+    logger.info(
+        f"🏆 BEST MODEL CHAMPION: '{best_model_name}' with RMSE={best_metrics['RMSE']:.4f}, R2={best_metrics['R2']:.4f}"
+    )
 
     # 7. Business Impact & Cost Savings Analysis
     y_test_failure = (y_test <= config["data"].get("failure_threshold_rul", 15)).astype(int)

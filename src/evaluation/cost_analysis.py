@@ -34,26 +34,40 @@ def calculate_business_impact(
     actual_failures = int(np.sum(y_true_failure))
 
     # Confusion matrix elements
-    tp = int(np.sum((y_true_failure == 1) & (y_pred_failure == 1)))  # Correctly predicted failures (Prevented)
-    fn = int(np.sum((y_true_failure == 1) & (y_pred_failure == 0)))  # Uncaught failures (Unscheduled downtime)
-    fp = int(np.sum((y_true_failure == 0) & (y_pred_failure == 1)))  # False alarms (Unnecessary inspection)
-    tn = int(np.sum((y_true_failure == 0) & (y_pred_failure == 0)))  # Normal operation correctly identified
+    tp = int(
+        np.sum((y_true_failure == 1) & (y_pred_failure == 1))
+    )  # Correctly predicted failures (Prevented)
+    fn = int(
+        np.sum((y_true_failure == 1) & (y_pred_failure == 0))
+    )  # Uncaught failures (Unscheduled downtime)
+    fp = int(
+        np.sum((y_true_failure == 0) & (y_pred_failure == 1))
+    )  # False alarms (Unnecessary inspection)
+    int(
+        np.sum((y_true_failure == 0) & (y_pred_failure == 0))
+    )  # Normal operation correctly identified
 
     # Financial breakdown
-    catastrophic_failure_cost_per_event = downtime_cost_per_hour * avg_downtime_hours  # e.g., $60,000
+    catastrophic_failure_cost_per_event = (
+        downtime_cost_per_hour * avg_downtime_hours
+    )  # e.g., $60,000
 
     # Reactive Cost (Status Quo - No Predictive Maintenance)
     total_reactive_cost = actual_failures * catastrophic_failure_cost_per_event
 
     # Predictive Cost (With ML Model)
-    prevented_failure_cost = tp * (preventive_maint_cost + (downtime_cost_per_hour * 2.0))  # Planned fix takes ~2 hrs
+    prevented_failure_cost = tp * (
+        preventive_maint_cost + (downtime_cost_per_hour * 2.0)
+    )  # Planned fix takes ~2 hrs
     uncaught_failure_cost = fn * catastrophic_failure_cost_per_event
     false_alarm_cost = fp * false_alarm_inspection_cost
 
     total_predictive_cost = prevented_failure_cost + uncaught_failure_cost + false_alarm_cost
 
     net_savings = max(0.0, total_reactive_cost - total_predictive_cost)
-    roi_percent = (net_savings / (total_predictive_cost + 1e-5)) * 100.0 if total_predictive_cost > 0 else 0.0
+    roi_percent = (
+        (net_savings / (total_predictive_cost + 1e-5)) * 100.0 if total_predictive_cost > 0 else 0.0
+    )
     downtime_reduction_pct = (tp / (actual_failures + 1e-5)) * 100.0 if actual_failures > 0 else 0.0
 
     executive_summary = (
@@ -76,5 +90,7 @@ def calculate_business_impact(
         "executive_summary": executive_summary,
     }
 
-    logger.info(f"Financial Cost Analysis Complete: Net Savings=${net_savings:,.2f}, ROI={roi_percent:.1f}%")
+    logger.info(
+        f"Financial Cost Analysis Complete: Net Savings=${net_savings:,.2f}, ROI={roi_percent:.1f}%"
+    )
     return results

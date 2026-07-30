@@ -1,6 +1,5 @@
 """Unit tests for ML models, Neural Nets, Registry, and Inference Engine."""
 
-
 import numpy as np
 import pandas as pd
 

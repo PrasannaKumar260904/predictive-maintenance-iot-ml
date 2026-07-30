@@ -2,7 +2,8 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+
 import joblib
 
 from src.utils.config import load_config
@@ -14,7 +15,7 @@ logger = get_logger(__name__)
 class ModelRegistry:
     """Manages serialization, deserialization, metadata tracking, and artifact persistence."""
 
-    def __init__(self, models_dir: Optional[str] = None):
+    def __init__(self, models_dir: str | None = None):
         if models_dir is None:
             config = load_config()
             models_dir = config["models"]["dir"]
@@ -26,9 +27,9 @@ class ModelRegistry:
         self,
         model: Any,
         model_name: str,
-        feature_names: List[str],
-        preprocessor: Optional[Any] = None,
-        metrics: Optional[Dict[str, float]] = None,
+        feature_names: list[str],
+        preprocessor: Any | None = None,
+        metrics: dict[str, float] | None = None,
     ) -> Path:
         """Saves trained model, feature names, preprocessor, and metrics JSON to disk.
 
@@ -69,7 +70,9 @@ class ModelRegistry:
         logger.info(f"Successfully saved model artifacts for '{model_name}' to {artifact_dir}")
         return artifact_dir
 
-    def load_model(self, model_name: str) -> Tuple[Any, List[str], Optional[Any], Optional[Dict[str, float]]]:
+    def load_model(
+        self, model_name: str
+    ) -> tuple[Any, list[str], Any | None, dict[str, float] | None]:
         """Loads model estimator, feature names, preprocessor, and metrics."""
         artifact_dir = self.models_dir / model_name
         if not artifact_dir.exists():
@@ -82,14 +85,14 @@ class ModelRegistry:
 
         model = joblib.load(model_file)
 
-        with open(features_file, "r", encoding="utf-8") as f:
+        with open(features_file, encoding="utf-8") as f:
             feature_names = json.load(f)["feature_names"]
 
         preprocessor = joblib.load(preprocessor_file) if preprocessor_file.exists() else None
 
         metrics = None
         if metrics_file.exists():
-            with open(metrics_file, "r", encoding="utf-8") as f:
+            with open(metrics_file, encoding="utf-8") as f:
                 metrics = json.load(f)
 
         logger.info(f"Loaded model '{model_name}' from {artifact_dir}")

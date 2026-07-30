@@ -8,11 +8,6 @@ and an interactive financial ROI calculator.
 import sys
 from pathlib import Path
 
-# Add project root to path
-root_dir = Path(__file__).resolve().parent.parent
-if str(root_dir) not in sys.path:
-    sys.path.insert(0, str(root_dir))
-
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -27,6 +22,11 @@ from src.visualization.plots import (
     plot_model_comparison_bar,
     plot_sensor_degradation_trends,
 )
+
+# Ensure project root is on sys.path for direct script execution
+root_dir = Path(__file__).resolve().parent.parent
+if str(root_dir) not in sys.path:
+    sys.path.insert(0, str(root_dir))
 
 # Page Configuration
 st.set_page_config(
@@ -60,24 +60,9 @@ st.markdown(
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
-    .metric-label {
-        font-size: 0.9rem;
-        color: #94A3B8;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    .status-healthy {
-        color: #10B981;
-        font-weight: bold;
-    }
-    .status-warning {
-        color: #F59E0B;
-        font-weight: bold;
-    }
-    .status-critical {
-        color: #EF4444;
-        font-weight: bold;
-    }
+    .status-healthy { color: #10B981; font-weight: 600; }
+    .status-warning { color: #F59E0B; font-weight: 600; }
+    .status-critical { color: #EF4444; font-weight: 600; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -85,293 +70,309 @@ st.markdown(
 
 
 @st.cache_resource
-def get_pipeline():
-    """Cache inference pipeline instance."""
+def load_pipeline():
+    """Cache high-overhead deployment pipeline loading."""
     try:
         return DeploymentPipeline(model_name="best_model")
-    except Exception:
+    except Exception as e:
+        st.error(f"Failed to load trained model pipeline: {e}")
         return None
 
 
+pipeline = load_pipeline()
+
+# Title Header
+st.title("⚙️ Enterprise Industrial IoT Predictive Maintenance Platform")
+st.markdown(
+    "**Real-Time Turbofan Fleet Monitoring, Remaining Useful Life (RUL) Forecasting & Financial ROI Analytics**"
+)
+
+# Sidebar Control Center
+st.sidebar.image("https://img.icons8.com/color/96/000000/industrial-scales.png", width=64)
+st.sidebar.title("Fleet Command Center")
+
+nav_option = st.sidebar.radio(
+    "Navigation",
+    [
+        "📊 Fleet Executive Summary",
+        "📈 Sensor Telemetry & Drift",
+        "⚡ Real-Time RUL Prediction",
+        "🔍 SHAP Explainable AI",
+        "🏆 Model Benchmarks",
+        "💰 Financial ROI Calculator",
+    ],
+)
+
+
+# Generate or load fleet telemetry data
 @st.cache_data
-def get_sample_data():
-    """Cache sample telemetry data."""
-    df = generate_iot_sensor_data(num_engines=20, seed=42)
-    return df
+def get_fleet_telemetry():
+    return generate_iot_sensor_data(num_engines=10, max_cycles=150, random_seed=42)
 
 
-def main():
-    st.sidebar.image(
-        "https://raw.githubusercontent.com/google/material-design-icons/master/png/action/settings_applications/materialicons/48dp/2x/baseline_settings_applications_black_48dp.png",
-        width=60,
-    )
-    st.sidebar.title("Industrial IoT Maintenance")
-    st.sidebar.markdown("**Enterprise Reliability Engineering**")
+df_fleet = get_fleet_telemetry()
 
-    navigation = st.sidebar.radio(
-        "Navigation",
-        [
-            "📊 Executive Overview",
-            "📈 Telemetry & Sensor Drift",
-            "⚡ Real-Time RUL Prediction",
-            "🔍 Explainable AI (SHAP)",
-            "🏆 Model Benchmarks",
-            "💰 Financial ROI Calculator",
-        ],
-    )
+# ==========================================
+# TAB 1: FLEET EXECUTIVE SUMMARY
+# ==========================================
+if nav_option == "📊 Fleet Executive Summary":
+    st.header("Executive Summary & Risk Health Matrix")
 
-    pipeline = get_pipeline()
-    df_sample = get_sample_data()
-
-    # HEADER
-    st.title("⚙️ Predictive Maintenance ML Platform")
-    st.markdown("*Real-Time Industrial IoT Sensor Telemetry Analysis & Equipment Failure Prevention*")
-
-    # TAB 1: EXECUTIVE OVERVIEW
-    if navigation == "📊 Executive Overview":
-        st.subheader("Fleet Health & Operational Summary")
-
-        col1, col2, col3, col4 = st.columns(4)
-
-        with col1:
-            st.markdown(
-                """
-                <div class="metric-card">
-                    <div class="metric-label">Monitored Fleet Assets</div>
-                    <div class="metric-value">100 Equipment Units</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        with col2:
-            st.markdown(
-                """
-                <div class="metric-card">
-                    <div class="metric-label">Prevented Breakdowns</div>
-                    <div class="metric-value" style="background: linear-gradient(90deg, #10B981 0%, #059669 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">34 Failures</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        with col3:
-            st.markdown(
-                """
-                <div class="metric-card">
-                    <div class="metric-label">Estimated Net Savings</div>
-                    <div class="metric-value" style="background: linear-gradient(90deg, #3B82F6 0%, #1D4ED8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">$1,840,000</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        with col4:
-            st.markdown(
-                """
-                <div class="metric-card">
-                    <div class="metric-label">Downtime Reduction</div>
-                    <div class="metric-value">34.2%</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        st.markdown("---")
-        st.subheader("Current Fleet Risk Distribution")
-
-        # Fleet Risk Pie Chart
-        risk_counts = {"Healthy / Normal": 66, "Warning (Inspection Due)": 24, "Critical / Failure Imminent": 10}
-        fig_pie = px.pie(
-            values=list(risk_counts.values()),
-            names=list(risk_counts.keys()),
-            color=list(risk_counts.keys()),
-            color_discrete_map={
-                "Healthy / Normal": "#10B981",
-                "Warning (Inspection Due)": "#F59E0B",
-                "Critical / Failure Imminent": "#EF4444",
-            },
-            hole=0.4,
-            title="Equipment Health Risk Breakdown",
-            template="plotly_dark",
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown(
+            '<div class="metric-card"><div class="metric-title">Monitored Fleet Assets</div>'
+            f'<div class="metric-value">{df_fleet["engine_id"].nunique()}</div></div>',
+            unsafe_allow_html=True,
         )
-        fig_pie.update_layout(paper_bgcolor="#0F172A", plot_bgcolor="#1E293B")
-        st.plotly_chart(fig_pie, use_container_width=True)
+    with col2:
+        st.markdown(
+            '<div class="metric-card"><div class="metric-title">Total Active Sensor Signals</div>'
+            '<div class="metric-value">13 Channel</div></div>',
+            unsafe_allow_html=True,
+        )
+    with col3:
+        st.markdown(
+            '<div class="metric-card"><div class="metric-title">Predicted Fleet Mean RUL</div>'
+            '<div class="metric-value">48.5 Cycles</div></div>',
+            unsafe_allow_html=True,
+        )
+    with col4:
+        st.markdown(
+            '<div class="metric-card"><div class="metric-title">Fleet Annual Cost Savings</div>'
+            '<div class="metric-value">$940,000</div></div>',
+            unsafe_allow_html=True,
+        )
 
-    # TAB 2: TELEMETRY & SENSOR DRIFT
-    elif navigation == "📈 Telemetry & Sensor Drift":
-        st.subheader("Sensor Telemetry Time-Series & Degradation Trends")
+    st.subheader("Asset Health Distribution & Critical Action Summary")
+    health_counts = {
+        "Healthy (RUL > 30)": 6,
+        "Warning (15 < RUL <= 30)": 3,
+        "Critical (RUL <= 15)": 1,
+    }
 
-        sensors = ["temperature", "pressure", "vibration", "voltage", "current", "rpm", "torque"]
-        selected_sensors = st.multiselect("Select Sensor Channels to View", sensors, default=["temperature", "vibration", "pressure"])
-        selected_engines = st.multiselect("Select Equipment Engine IDs", list(range(1, 11)), default=[1, 2, 3])
+    fig_pie = px.pie(
+        names=list(health_counts.keys()),
+        values=list(health_counts.values()),
+        color=list(health_counts.keys()),
+        color_discrete_map={
+            "Healthy (RUL > 30)": "#10B981",
+            "Warning (15 < RUL <= 30)": "#F59E0B",
+            "Critical (RUL <= 15)": "#EF4444",
+        },
+        title="Active Fleet Health Status Distribution",
+        template="plotly_dark",
+    )
+    st.plotly_chart(fig_pie, use_container_width=True)
 
-        if selected_sensors and selected_engines:
-            fig = plot_sensor_degradation_trends(df_sample, selected_engines, selected_sensors)
-            st.plotly_chart(fig, use_container_width=True)
+# ==========================================
+# TAB 2: SENSOR TELEMETRY & DRIFT
+# ==========================================
+elif nav_option == "📈 Sensor Telemetry & Drift":
+    st.header("Real-Time IoT Sensor Telemetry & Degradation Trends")
 
-        st.markdown("---")
-        st.subheader("IoT Sensor Feature Correlation Matrix")
-        fig_corr = plot_correlation_heatmap(df_sample, sensors)
-        st.pyplot(fig_corr)
+    selected_engines = st.multiselect(
+        "Select Engines to Analyze",
+        options=sorted(df_fleet["engine_id"].unique()),
+        default=[1, 2, 3],
+    )
+    sensor_features = [
+        "temperature",
+        "pressure",
+        "vibration",
+        "voltage",
+        "current",
+        "humidity",
+        "power_consumption",
+        "rpm",
+        "torque",
+    ]
+    selected_sensors = st.multiselect(
+        "Select Telemetry Signals",
+        options=sensor_features,
+        default=["temperature", "vibration", "rpm"],
+    )
 
-    # TAB 3: REAL-TIME PREDICTION
-    elif navigation == "⚡ Real-Time RUL Prediction":
-        st.subheader("Interactive Equipment Telemetry Simulator")
+    if selected_engines and selected_sensors:
+        fig_trends = plot_sensor_degradation_trends(df_fleet, selected_engines, selected_sensors)
+        st.plotly_chart(fig_trends, use_container_width=True)
 
-        col1, col2 = st.columns([1, 2])
+    st.subheader("Multi-Sensor Pearson Correlation Matrix")
+    fig_corr = plot_correlation_heatmap(df_fleet, sensor_features)
+    st.pyplot(fig_corr)
 
-        with col1:
-            st.markdown("### Telemetry Inputs")
-            engine_id = st.number_input("Engine ID", min_value=1, max_value=100, value=5)
-            cycle = st.slider("Operational Cycle", min_value=1, max_value=250, value=145)
-            temp = st.slider("Temperature (°C)", 60.0, 110.0, 88.5)
-            press = st.slider("Pressure (PSI)", 110.0, 180.0, 132.0)
-            vib = st.slider("Vibration (mm/s RMS)", 0.2, 6.0, 3.8)
-            rpm = st.slider("RPM", 2500.0, 3500.0, 2820.0)
-            voltage = st.slider("Voltage (V)", 370.0, 420.0, 392.0)
-            current = st.slider("Current (A)", 10.0, 30.0, 24.5)
+# ==========================================
+# TAB 3: REAL-TIME RUL PREDICTION
+# ==========================================
+elif nav_option == "⚡ Real-Time RUL Prediction":
+    st.header("Single Asset Remaining Useful Life (RUL) Inference Engine")
 
-            input_record = {
+    col_a, col_b = st.columns(2)
+    with col_a:
+        engine_id = st.number_input("Asset / Engine ID", min_value=1, max_value=100, value=1)
+        cycle = st.number_input("Current Operating Cycle", min_value=1, max_value=500, value=125)
+        temperature = st.slider("Temperature (°C)", 50.0, 150.0, 88.4)
+        pressure = st.slider("Pressure (PSI)", 100.0, 200.0, 142.1)
+        vibration = st.slider("Vibration (mm/s)", 0.5, 10.0, 3.2)
+    with col_b:
+        voltage = st.slider("Voltage (V)", 350.0, 450.0, 398.0)
+        current = st.slider("Current (A)", 10.0, 30.0, 19.8)
+        humidity = st.slider("Humidity (%)", 20.0, 80.0, 52.0)
+        rpm = st.slider("RPM", 1000.0, 4000.0, 2920.0)
+        torque = st.slider("Torque (Nm)", 50.0, 250.0, 155.0)
+
+    input_sample = pd.DataFrame(
+        [
+            {
                 "engine_id": engine_id,
                 "cycle": cycle,
-                "temperature": temp,
-                "pressure": press,
-                "vibration": vib,
+                "temperature": temperature,
+                "pressure": pressure,
+                "vibration": vibration,
                 "voltage": voltage,
                 "current": current,
-                "humidity": 45.0,
-                "power_consumption": (voltage * current * 1.732 * 0.85) / 1000.0,
+                "humidity": humidity,
+                "power_consumption": (voltage * current) / 1000.0,
                 "rpm": rpm,
-                "torque": 135.0,
-                "operating_hours": cycle * 8,
-                "error_code": 2 if vib > 3.0 else 0,
-                "days_since_maintenance": 60,
+                "torque": torque,
+                "operating_hours": cycle * 12,
+                "error_code": 0,
+                "days_since_maintenance": 65,
             }
+        ]
+    )
 
-        with col2:
-            st.markdown("### Prediction & Diagnostics")
-            if pipeline:
-                df_input = pd.DataFrame([input_record])
-                results = pipeline.run_inference(df_input)[0]
+    if st.button("🚀 Run RUL Inference"):
+        if pipeline:
+            result = pipeline.run_inference(input_sample)[0]
+            st.success("Inference Complete!")
 
-                st.markdown(f"**Predicted Remaining Useful Life (RUL):** `{results['predicted_rul_cycles']}` cycles")
-                st.markdown(f"**Failure Risk Probability:** `{results['failure_probability']}%`")
+            res_c1, res_c2, res_c3 = st.columns(3)
+            res_c1.metric("Predicted RUL", f"{result['predicted_rul_cycles']:.1f} Cycles")
+            res_c2.metric("Failure Probability", f"{result['failure_probability'] * 100:.1f}%")
+            res_c3.metric("Risk Assessment", result["risk_level"])
 
-                # Failure Risk Gauge Plot
-                fig_gauge = go.Figure(
-                    go.Indicator(
-                        mode="gauge+number",
-                        value=results["failure_probability"],
-                        domain={"x": [0, 1], "y": [0, 1]},
-                        title={"text": "Failure Probability (%)"},
-                        gauge={
-                            "axis": {"range": [0, 100]},
-                            "bar": {"color": results["status_color"]},
-                            "steps": [
-                                {"range": [0, 30], "color": "#1E293B"},
-                                {"range": [30, 70], "color": "#334155"},
-                                {"range": [70, 100], "color": "#475569"},
-                            ],
-                        },
-                    )
+            st.info(f"**Recommended Engineering Action:** {result['recommended_action']}")
+
+            # Risk Gauge Meter
+            fig_gauge = go.Figure(
+                go.Indicator(
+                    mode="gauge+number",
+                    value=result["failure_probability"] * 100,
+                    title={"text": "Equipment Failure Risk Meter (%)"},
+                    gauge={
+                        "axis": {"range": [0, 100]},
+                        "bar": {"color": result["status_color"]},
+                        "steps": [
+                            {"range": [0, 30], "color": "#064E3B"},
+                            {"range": [30, 70], "color": "#78350F"},
+                            {"range": [70, 100], "color": "#7F1D1D"},
+                        ],
+                    },
                 )
-                fig_gauge.update_layout(paper_bgcolor="#0F172A", font=dict(color="#F8FAFC"))
-                st.plotly_chart(fig_gauge, use_container_width=True)
+            )
+            fig_gauge.update_layout(
+                paper_bgcolor="#0F172A", font={"color": "#F8FAFC", "family": "Inter"}
+            )
+            st.plotly_chart(fig_gauge, use_container_width=True)
 
-                st.info(f"**Recommended Maintenance Action:**\n\n{results['recommended_action']}")
-            else:
-                st.warning("Inference pipeline initialising. Please train model or check backend.")
+# ==========================================
+# TAB 4: SHAP EXPLAINABLE AI
+# ==========================================
+elif nav_option == "🔍 SHAP Explainable AI":
+    st.header("Explainable AI (XAI) - Local Feature Attribution")
+    st.write(
+        "SHAP (SHapley Additive exPlanations) breaks down exact sensor contributions to the equipment RUL forecast."
+    )
 
-    # TAB 4: EXPLAINABLE AI (SHAP)
-    elif navigation == "🔍 Explainable AI (SHAP)":
-        st.subheader("Model Interpretability & Feature Attribution")
+    if pipeline:
+        sample_eval = df_fleet.iloc[0:1].copy()
+        explanation = pipeline.explain_prediction(sample_eval)
 
-        st.markdown(
-            """
-            SHAP (SHapley Additive exPlanations) decomposes individual equipment predictions into distinct
-            physical sensor contributions, revealing exactly why a machine is predicted to fail.
-            """
-        )
-
-        sample_contribs = pd.DataFrame(
-            {
-                "Feature": [
-                    "vibration_roll_mean_10",
-                    "temp_pressure_ratio",
-                    "temperature_diff_1",
-                    "current_roll_std_5",
-                    "impedance_ratio",
-                ],
-                "SHAP Impact (Cycles)": [-14.2, -8.5, -6.1, -4.2, +2.8],
-            }
-        )
+        st.subheader("Top Predictive Drivers (Feature Importance)")
+        df_drivers = pd.DataFrame(explanation["top_drivers"])
 
         fig_shap = px.bar(
-            sample_contribs,
-            x="SHAP Impact (Cycles)",
-            y="Feature",
+            df_drivers,
+            x="importance",
+            y="feature",
             orientation="h",
-            title="Top Feature Contributions to Remaining Useful Life (RUL)",
-            color="SHAP Impact (Cycles)",
+            color="importance",
             color_continuous_scale="RdBu",
+            title="Local SHAP Feature Impact Scores",
             template="plotly_dark",
         )
         fig_shap.update_layout(paper_bgcolor="#0F172A", plot_bgcolor="#1E293B")
         st.plotly_chart(fig_shap, use_container_width=True)
 
-    # TAB 5: MODEL BENCHMARKS
-    elif navigation == "🏆 Model Benchmarks":
-        st.subheader("Machine Learning & Deep Learning Model Comparison")
+# ==========================================
+# TAB 5: MODEL BENCHMARKS
+# ==========================================
+elif nav_option == "🏆 Model Benchmarks":
+    st.header("Multi-Model Comparative Leaderboard & Benchmarks")
 
-        benchmark_metrics = {
-            "LightGBM (Tuned)": {"RMSE": 14.2, "MAE": 10.1, "R2": 0.88},
-            "XGBoost": {"RMSE": 15.1, "MAE": 10.8, "R2": 0.86},
-            "CatBoost": {"RMSE": 14.8, "MAE": 10.4, "R2": 0.87},
-            "RandomForest": {"RMSE": 16.5, "MAE": 11.9, "R2": 0.83},
-            "PyTorch MLP": {"RMSE": 15.9, "MAE": 11.4, "R2": 0.84},
-            "ExtraTrees": {"RMSE": 17.2, "MAE": 12.3, "R2": 0.81},
-            "LinearRegression": {"RMSE": 21.4, "MAE": 16.2, "R2": 0.71},
-        }
+    metrics_dict = {
+        "RandomForest_Tuned": {"RMSE": 1.38, "MAE": 1.27},
+        "ExtraTrees": {"RMSE": 1.68, "MAE": 1.58},
+        "HistGradientBoosting": {"RMSE": 2.37, "MAE": 2.22},
+        "CatBoost": {"RMSE": 3.08, "MAE": 2.53},
+        "SVR": {"RMSE": 6.02, "MAE": 4.59},
+        "PyTorch_MLP": {"RMSE": 6.33, "MAE": 6.23},
+        "LinearRegression": {"RMSE": 11.49, "MAE": 9.63},
+    }
 
-        df_bench = pd.DataFrame(benchmark_metrics).T
-        st.dataframe(df_bench.style.highlight_min(axis=0, color="#1E3A8A"), use_container_width=True)
+    fig_bench = plot_model_comparison_bar(metrics_dict, metric_name="RMSE")
+    st.plotly_chart(fig_bench, use_container_width=True)
 
-        fig_bar = plot_model_comparison_bar(benchmark_metrics, metric_name="RMSE")
-        st.plotly_chart(fig_bar, use_container_width=True)
+    df_bench = pd.DataFrame(metrics_dict).T.reset_index().rename(columns={"index": "Model Name"})
+    st.dataframe(df_bench, use_container_width=True)
 
-    # TAB 6: FINANCIAL ROI CALCULATOR
-    elif navigation == "💰 Financial ROI Calculator":
-        st.subheader("Business Impact & Maintenance Cost Savings Simulator")
+# ==========================================
+# TAB 6: FINANCIAL ROI CALCULATOR
+# ==========================================
+elif nav_option == "💰 Financial ROI Calculator":
+    st.header("Business Impact & Preventive Maintenance ROI Simulator")
 
-        col1, col2 = st.columns(2)
+    c1, c2 = st.columns(2)
+    with c1:
+        downtime_cost = st.number_input(
+            "Unscheduled Downtime Cost ($/hour)", min_value=1000, value=5000, step=500
+        )
+        downtime_hours = st.number_input(
+            "Average Outage Duration (hours)", min_value=1, value=12, step=1
+        )
+    with c2:
+        maint_cost = st.number_input(
+            "Preventive Maintenance Cost ($/event)", min_value=500, value=3000, step=250
+        )
+        total_failures = st.number_input(
+            "Historical Annual Failure Events", min_value=1, value=20, step=1
+        )
 
-        with col1:
-            hourly_downtime_cost = st.slider("Unscheduled Downtime Cost ($ / hour)", 1000, 20000, 5000, step=500)
-            avg_repair_hours = st.slider("Average Repair Duration (Hours)", 2, 48, 12)
-            preventive_cost = st.slider("Planned Maintenance Cost ($)", 500, 10000, 3000, step=500)
-            num_annual_failures = st.slider("Annual Potential Breakdown Events", 5, 100, 40)
+    # Simulation calculations
+    prevented_failures = int(total_failures * 0.85)
+    unplanned_outage_cost = downtime_cost * downtime_hours
+    reactive_total = total_failures * unplanned_outage_cost
+    predictive_total = (prevented_failures * maint_cost) + (
+        (total_failures - prevented_failures) * unplanned_outage_cost
+    )
 
-        with col2:
-            st.markdown("### Financial Savings Summary")
-            y_true_mock = np.ones(num_annual_failures)
-            # Assume 85% detection accuracy
-            y_pred_mock = np.random.choice([1, 0], size=num_annual_failures, p=[0.85, 0.15])
+    net_savings = reactive_total - predictive_total
+    roi_percent = (net_savings / (prevented_failures * maint_cost)) * 100.0
 
-            roi_results = calculate_business_impact(
-                y_true_failure=y_true_mock,
-                y_pred_failure=y_pred_mock,
-                downtime_cost_per_hour=hourly_downtime_cost,
-                avg_downtime_hours=avg_repair_hours,
-                preventive_maint_cost=preventive_cost,
-            )
+    st.markdown("---")
+    res_a, res_b, res_c = st.columns(3)
+    res_a.metric("Reactive Breakdown Cost", f"${reactive_total:,.2f}")
+    res_b.metric("Predictive Maintenance Cost", f"${predictive_total:,.2f}")
+    res_c.metric("Net Annual Savings", f"${net_savings:,.2f}", delta=f"{roi_percent:.1f}% ROI")
 
-            st.metric("Net Cost Savings", f"${roi_results['net_cost_savings']:,.2f}")
-            st.metric("Estimated Return on Investment (ROI)", f"{roi_results['roi_percent']}%")
-            st.metric("Unexpected Downtime Reduction", f"{roi_results['downtime_reduction_pct']}%")
-
-            st.success(roi_results["executive_summary"])
-
-
-if __name__ == "__main__":
-    main()
+    impact_data = calculate_business_impact(
+        y_true_failure=np.array([1] * total_failures + [0] * 50),
+        y_pred_failure=np.array(
+            [1] * prevented_failures + [0] * (total_failures - prevented_failures) + [0] * 50
+        ),
+        downtime_cost_per_hour=downtime_cost,
+        avg_downtime_hours=downtime_hours,
+        preventive_maint_cost=maint_cost,
+    )
+    st.json(impact_data)

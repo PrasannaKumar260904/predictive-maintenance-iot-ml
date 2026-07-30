@@ -23,7 +23,9 @@ class DataPreprocessor:
         self.feature_columns: list[str] = []
         self.is_fitted: bool = False
 
-    def remove_constant_features(self, df: pd.DataFrame, feature_cols: list[str]) -> tuple[pd.DataFrame, list[str]]:
+    def remove_constant_features(
+        self, df: pd.DataFrame, feature_cols: list[str]
+    ) -> tuple[pd.DataFrame, list[str]]:
         """Identifies and drops columns with zero or near-zero variance."""
         constant_cols = [c for c in feature_cols if df[c].nunique() <= 1 or df[c].std() < 1e-6]
         self.constant_columns = constant_cols
@@ -69,7 +71,11 @@ class DataPreprocessor:
         scaled_df = pd.DataFrame(scaled_vals, columns=self.feature_columns, index=df.index)
 
         # Preserve non-feature metadata columns (e.g. engine_id, cycle, RUL, failure_risk)
-        metadata_cols = [c for c in df.columns if c not in self.feature_columns and c not in self.constant_columns]
+        metadata_cols = [
+            c
+            for c in df.columns
+            if c not in self.feature_columns and c not in self.constant_columns
+        ]
         for col in metadata_cols:
             scaled_df[col] = df[col].values
 

@@ -17,7 +17,9 @@ class PredictiveMaintenanceInferenceEngine:
 
     def __init__(self, model_name: str = "best_model", models_dir: str = None):
         self.registry = ModelRegistry(models_dir)
-        self.model, self.feature_names, self.preprocessor, self.metrics = self.registry.load_model(model_name)
+        self.model, self.feature_names, self.preprocessor, self.metrics = self.registry.load_model(
+            model_name
+        )
         logger.info(f"Initialized Inference Engine with model '{model_name}'.")
 
     def _prepare_features(self, df: pd.DataFrame) -> np.ndarray:
@@ -58,7 +60,7 @@ class PredictiveMaintenanceInferenceEngine:
         ruls = self.predict_rul(df)
         results = []
 
-        for idx, rul in enumerate(ruls):
+        for _idx, rul in enumerate(ruls):
             rul_val = float(np.round(rul, 1))
 
             # Failure Probability Sigmoid curve based on RUL
@@ -72,7 +74,9 @@ class PredictiveMaintenanceInferenceEngine:
                 status_color = "#FF416C"
             elif rul_val <= 30:
                 risk_level = "WARNING"
-                action = "⚠️ ELEVATED WEAR: Schedule preventive maintenance within 5 operating cycles."
+                action = (
+                    "⚠️ ELEVATED WEAR: Schedule preventive maintenance within 5 operating cycles."
+                )
                 status_color = "#FFB302"
             else:
                 risk_level = "HEALTHY / NORMAL"

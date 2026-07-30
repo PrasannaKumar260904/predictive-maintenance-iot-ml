@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 
 
 def compute_rolling_features(
-    df: pd.DataFrame, sensor_cols: list[str], window_sizes: list[int] = [5, 10, 20]
+    df: pd.DataFrame, sensor_cols: list[str], window_sizes: list[int] = None
 ) -> pd.DataFrame:
     """Computes rolling statistics (mean, std, min, max) for sensor streams per engine.
 
@@ -27,33 +27,38 @@ def compute_rolling_features(
     Returns:
         pd.DataFrame: Dataframe with appended rolling feature columns.
     """
+    if window_sizes is None:
+        window_sizes = [5, 10, 20]
     df_out = df.copy()
 
     for window in window_sizes:
         for sensor in sensor_cols:
             # Group by engine_id to prevent data leakage between engines
             grouped = df_out.groupby("engine_id")[sensor]
+            w = window
 
             df_out[f"{sensor}_roll_mean_{window}"] = grouped.transform(
-                lambda x: x.rolling(window=window, min_periods=1).mean()
+                lambda x, w=w: x.rolling(window=w, min_periods=1).mean()
             )
-            df_out[f"{sensor}_roll_std_{window}"] = (
-                grouped.transform(lambda x: x.rolling(window=window, min_periods=1).std()).fillna(0)
-            )
+            df_out[f"{sensor}_roll_std_{window}"] = grouped.transform(
+                lambda x, w=w: x.rolling(window=w, min_periods=1).std()
+            ).fillna(0)
             df_out[f"{sensor}_roll_min_{window}"] = grouped.transform(
-                lambda x: x.rolling(window=window, min_periods=1).min()
+                lambda x, w=w: x.rolling(window=w, min_periods=1).min()
             )
             df_out[f"{sensor}_roll_max_{window}"] = grouped.transform(
-                lambda x: x.rolling(window=window, min_periods=1).max()
+                lambda x, w=w: x.rolling(window=w, min_periods=1).max()
             )
 
     return df_out
 
 
 def compute_lag_and_diff_features(
-    df: pd.DataFrame, sensor_cols: list[str], lags: list[int] = [1, 3, 5]
+    df: pd.DataFrame, sensor_cols: list[str], lags: list[int] = None
 ) -> pd.DataFrame:
     """Computes lag values and cycle-over-cycle rate of change differences."""
+    if lags is None:
+        lags = [1, 3, 5]
     df_out = df.copy()
 
     for lag in lags:
@@ -87,17 +92,25 @@ def compute_sensor_interaction_features(df: pd.DataFrame) -> pd.DataFrame:
     if "voltage" in cols and "current" in cols:
         df_out["impedance_ratio"] = df_out["voltage"] / (df_out["current"] + 1e-5)
     if "torque" in cols and "rpm" in cols:
-        df_out["mechanical_power_est"] = (df_out["torque"] * df_out["rpm"]) / 9550.0  # kW power estimate formula
+        df_out["mechanical_power_est"] = (
+            df_out["torque"] * df_out["rpm"]
+        ) / 9550.0  # kW power estimate formula
 
     return df_out
 
 
-def compute_fft_features(df: pd.DataFrame, target_sensor: str = "sensor_11", sample_rate: int = 100) -> pd.DataFrame:
+def compute_fft_features(
+    df: pd.DataFrame, target_sensor: str = "sensor_11", sample_rate: int = 100
+) -> pd.DataFrame:
     """Computes Fast Fourier Transform (FFT) spectral energy and peak frequency per engine window."""
     df_out = df.copy()
     if target_sensor not in df_out.columns:
         # Fallback sensor if target_sensor not present
-        num_sensors = [c for c in df_out.columns if c.startswith("sensor_") or c in ["vibration", "temperature"]]
+        num_sensors = [
+            c
+            for c in df_out.columns
+            if c.startswith("sensor_") or c in ["vibration", "temperature"]
+        ]
         if not num_sensors:
             return df_out
         target_sensor = num_sensors[0]
@@ -129,8 +142,8 @@ def compute_fft_features(df: pd.DataFrame, target_sensor: str = "sensor_11", sam
 def engineer_all_features(
     df: pd.DataFrame,
     sensor_cols: list[str] | None = None,
-    rolling_windows: list[int] = [5, 10, 20],
-    lags: list[int] = [1, 3, 5],
+    rolling_windows: list[int] = None,
+    lags: list[int] = None,
 ) -> pd.DataFrame:
     """Master pipeline executing all feature engineering functions.
 
@@ -143,9 +156,23 @@ def engineer_all_features(
     Returns:
         pd.DataFrame: Fully feature-engineered dataframe.
     """
+    if lags is None:
+        lags = [1, 3, 5]
+    if rolling_windows is None:
+        rolling_windows = [5, 10, 20]
     if sensor_cols is None:
-        exclude = {"engine_id", "cycle", "RUL", "RUL_clipped", "failure_risk", "is_failure", "machine_type"}
-        sensor_cols = [c for c in df.columns if c not in exclude and pd.api.types.is_numeric_dtype(df[c])]
+        exclude = {
+            "engine_id",
+            "cycle",
+            "RUL",
+            "RUL_clipped",
+            "failure_risk",
+            "is_failure",
+            "machine_type",
+        }
+        sensor_cols = [
+            c for c in df.columns if c not in exclude and pd.api.types.is_numeric_dtype(df[c])
+        ]
 
     logger.info(f"Starting feature engineering on {len(sensor_cols)} sensor channels...")
 
@@ -160,6 +187,8 @@ def engineer_all_features(
     df_feats["cycle_rate_of_change"] = df_feats["cycle"] / (grouped_cycle.transform("max") + 1e-5)
 
     new_feats_count = df_feats.shape[1] - df.shape[1]
-    logger.info(f"Feature engineering complete. Created {new_feats_count} new features. Total: {df_feats.shape[1]}")
+    logger.info(
+        f"Feature engineering complete. Created {new_feats_count} new features. Total: {df_feats.shape[1]}"
+    )
 
     return df_feats
