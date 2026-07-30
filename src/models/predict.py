@@ -35,7 +35,7 @@ class PredictiveMaintenanceInferenceEngine:
 
     def _generate_fallback_model(self, model_name: str):
         """Generates and persists a lightweight fallback model if saved artifacts are missing."""
-        df = generate_iot_sensor_data(num_engines=5, max_cycles=40, random_seed=42)
+        df = generate_iot_sensor_data(num_engines=5, max_cycles=40, seed=42)
         exclude = {
             "engine_id",
             "cycle",

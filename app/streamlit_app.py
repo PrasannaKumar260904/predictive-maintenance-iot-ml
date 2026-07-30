@@ -107,7 +107,7 @@ nav_option = st.sidebar.radio(
 # Generate or load fleet telemetry data
 @st.cache_data
 def get_fleet_telemetry():
-    return generate_iot_sensor_data(num_engines=10, max_cycles=150, random_seed=42)
+    return generate_iot_sensor_data(num_engines=10, max_cycles=150, seed=42)
 
 
 df_fleet = get_fleet_telemetry()
