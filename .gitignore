@@ -60,21 +60,22 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# MLflow & Experiment Tracking
+# MLflow & CatBoost Logs
 mlruns/
 .mlflow/
+catboost_info/
 
-# Project Specific Data & Model Artifacts (Keep git clean)
+# Model Binary Artifacts
+*.joblib
+*.pkl
+*.pth
+*.onnx
+
+# Project Data
 data/raw/*.csv
 data/raw/*.txt
 data/processed/*.csv
 data/processed/*.parquet
-models/*.joblib
-models/*.pkl
-models/*.pth
-models/*.onnx
-reports/figures/*.png
-reports/figures/*.html
 
 # Keep directories git-tracked
 !data/raw/.gitkeep
