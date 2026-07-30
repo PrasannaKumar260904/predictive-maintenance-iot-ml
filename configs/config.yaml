@@ -1,0 +1,44 @@
+project:
+  name: "Predictive Maintenance IoT Machine Learning Platform"
+  version: "1.0.0"
+  author: "Senior ML & Data Science Team"
+
+data:
+  cmapss_url: "https://raw.githubusercontent.com/booydar/NASA-CMAPSS-Turbofan-Degradation-FD001/main/train_FD001.txt"
+  cmapss_test_url: "https://raw.githubusercontent.com/booydar/NASA-CMAPSS-Turbofan-Degradation-FD001/main/test_FD001.txt"
+  cmapss_rul_url: "https://raw.githubusercontent.com/booydar/NASA-CMAPSS-Turbofan-Degradation-FD001/main/RUL_FD001.txt"
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  max_rul_clip: 125
+  warning_threshold_rul: 30
+  failure_threshold_rul: 15
+  synthetic_num_engines: 100
+  synthetic_max_cycles: 250
+  random_seed: 42
+
+features:
+  rolling_windows: [5, 10, 20]
+  lag_cycles: [1, 3, 5]
+  fft_sample_rate: 100
+  correlation_threshold: 0.95
+  variance_threshold: 0.01
+
+models:
+  dir: "models"
+  primary_target: "RUL"
+  classification_target: "failure_risk"
+  optuna_trials: 20
+  random_state: 42
+  cv_splits: 5
+
+business:
+  unscheduled_downtime_cost_per_hour: 5000  # $5,000 / hr
+  average_downtime_hours: 12                # 12 hrs per failure
+  preventive_maintenance_cost: 3000          # $3,000 planned fix
+  false_positive_inspection_cost: 500        # $500 unnecessary check
+
+api:
+  title: "Predictive Maintenance IoT API"
+  version: "1.0.0"
+  host: "0.0.0.0"
+  port: 8000
