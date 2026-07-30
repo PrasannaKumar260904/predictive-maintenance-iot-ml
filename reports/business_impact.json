@@ -1,0 +1,13 @@
+{
+  "total_units_evaluated": 20,
+  "actual_failures": 20,
+  "failures_prevented": 20,
+  "failures_uncaught": 0,
+  "false_alarms": 0,
+  "downtime_reduction_pct": 100.0,
+  "total_reactive_cost": 1200000,
+  "total_predictive_cost": 260000.0,
+  "net_cost_savings": 940000.0,
+  "roi_percent": 361.54,
+  "executive_summary": "Predictive Maintenance model prevented 20 out of 20 potential breakdowns, reducing unexpected downtime by 100.0%. Total estimated net cost savings: $940,000.00 with an estimated ROI of 361.5%."
+}

@@ -1,0 +1,59 @@
+{
+  "best_model": "RandomForest",
+  "all_models": {
+    "LinearRegression": {
+      "MAE": 9.6306,
+      "RMSE": 11.4973,
+      "MAPE": 96306435.36,
+      "R2": 0.0
+    },
+    "Ridge": {
+      "MAE": 9.6178,
+      "RMSE": 11.4855,
+      "MAPE": 96178322.76,
+      "R2": 0.0
+    },
+    "RandomForest": {
+      "MAE": 1.4326,
+      "RMSE": 1.547,
+      "MAPE": 14326299.78,
+      "R2": 0.0
+    },
+    "ExtraTrees": {
+      "MAE": 1.9765,
+      "RMSE": 2.0956,
+      "MAPE": 19765384.76,
+      "R2": 0.0
+    },
+    "HistGradientBoosting": {
+      "MAE": 6.3915,
+      "RMSE": 6.408,
+      "MAPE": 63914493.35,
+      "R2": 0.0
+    },
+    "SVR": {
+      "MAE": 20.8988,
+      "RMSE": 22.5702,
+      "MAPE": 208987908.92,
+      "R2": 0.0
+    },
+    "CatBoost": {
+      "MAE": 19.377,
+      "RMSE": 19.4848,
+      "MAPE": 193769729.95,
+      "R2": 0.0
+    },
+    "PyTorch_MLP": {
+      "MAE": 6.5694,
+      "RMSE": 6.6011,
+      "MAPE": 65694193.26,
+      "R2": 0.0
+    },
+    "Ridge_Tuned": {
+      "MAE": 9.4763,
+      "RMSE": 11.3657,
+      "MAPE": 94763398.53,
+      "R2": 0.0
+    }
+  }
+}
