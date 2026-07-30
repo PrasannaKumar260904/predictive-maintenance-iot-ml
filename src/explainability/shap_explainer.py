@@ -91,6 +91,7 @@ class ModelExplainer:
                     "feature": feat,
                     "value": float(val),
                     "shap_value": float(shap_val),
+                    "importance": abs(float(shap_val)),
                     "impact": (
                         "Increases RUL/Health" if shap_val > 0 else "Decreases RUL (Degradation)"
                     ),
